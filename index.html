@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Family Wish Lists</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 15c-4-7-11-8-11-3s6 4 11 3zm0 0c4-7 11-8 11-3s-6 4-11 3z' fill='none' stroke='%23B4483C' stroke-width='2.4'/%3E%3Cpath d='M16 15l-5 11M16 15l5 11' stroke='%23B4483C' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: gift-tag picker → two-pane app (family nav left, one list right; nav becomes a chip row on phones) */
+:root{
+  --bg:#FAF6EE; --surface:#FFFDF8; --sand:#EBE3D5; --line:#DDD3C2; --muted:#6F665A; --ink:#2B2622;
+  --red:#B4483C; --red-deep:#8E3227; --red-tint:#F6DDD8;
+  --gold:#D2A03C; --gold-deep:#8A6410; --gold-tint:#F8EACB;
+  --green:#5F8A5C; --green-deep:#3F6B45; --green-tint:#DEE9DA;
+  --slate:#3F6D8C; --plum:#74506A; --on-accent:#FFFDF8;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --r:10px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#1D1916; --surface:#272220; --sand:#332C27; --line:#463D35; --muted:#ABA192; --ink:#F2ECE1;
+  --red:#D2705F; --red-deep:#EC9C8D; --red-tint:#46241F;
+  --gold:#D2A03C; --gold-deep:#E6C072; --gold-tint:#413419;
+  --green:#7DA878; --green-deep:#A6CDA0; --green-tint:#243428;
+  --slate:#86ADC9; --plum:#BC93B0; --on-accent:#1D1916; color-scheme:dark}}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+[hidden]{display:none!important}
+.wrap{max-width:1040px;margin:0 auto;padding-block:20px 56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.55}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.bow{width:28px;height:28px;flex:none}
+.who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px}
+.who strong{color:var(--ink);font-weight:600}
+.link-btn{background:none;border:0;padding:4px 2px;color:var(--slate);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+.banner{background:var(--gold-tint);color:var(--ink);border-left:4px solid var(--gold);padding:12px 14px;border-radius:6px;margin-bottom:20px;font-size:15px}
+
+/* Picker */
+.picker-head{max-width:560px;margin-bottom:24px}
+.picker-head h2{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.picker-head p{margin:0;color:var(--muted)}
+.tags{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px 16px;margin-bottom:28px}
+.tag{--c:var(--red);position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
+  min-height:92px;padding:16px 18px 16px 44px;border:0;
+  background:color-mix(in srgb, var(--c) 15%, var(--surface));
+  clip-path:polygon(22px 0,100% 0,100% 100%,22px 100%,0 50%);transition:transform .18s ease}
+.tag::before{content:"";position:absolute;left:16px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 2px var(--c)}
+.tag .eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--c);font-weight:600}
+.tag .nm{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.tag:hover{transform:rotate(-1.5deg) translateY(-2px)}
+.tag:nth-child(5n+2){--c:var(--green)} .tag:nth-child(5n+3){--c:var(--slate)}
+.tag:nth-child(5n+4){--c:var(--plum)} .tag:nth-child(5n+5){--c:var(--gold-deep)}
+.empty{color:var(--muted);padding:18px;border:1.5px dashed var(--line);border-radius:var(--r);grid-column:1/-1}
+.addform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:520px}
+.addform label{width:100%;font-weight:600;font-size:15px}
+.addform input{flex:1 1 220px;min-width:0}
+.formmsg{width:100%;font-size:14px;color:var(--muted);min-height:1.2em}
+.formmsg.err{color:var(--red-deep)}
+
+input[type=text],input[type=url]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0;font-size:16px}
+input::placeholder{color:color-mix(in srgb, var(--muted) 75%, transparent)}
+.btn{border:0;border-radius:8px;padding:9px 16px;font-weight:600;background:var(--green-deep);color:var(--on-accent);white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.danger{background:var(--red-deep)}
+.btn.sm{padding:6px 12px;font-size:14px}
+
+/* App shell */
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;align-items:start}
+.nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:12px}
+.navlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:14px 10px 4px}
+.navbtn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:0;background:none;padding:9px 12px;border-radius:8px}
+.navbtn span{font-weight:600}
+.navbtn small{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.navbtn:hover{background:var(--sand)}
+.navbtn.on{background:var(--surface);box-shadow:inset 3px 0 0 var(--red), 0 0 0 1px var(--line)}
+
+.pagehead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;margin-bottom:20px}
+.pagehead h2{font-size:clamp(26px,4vw,34px);font-weight:700;letter-spacing:-.015em}
+.pagehead p{margin:4px 0 0;color:var(--muted);max-width:60ch;width:100%}
+.status{font-size:14px;color:var(--muted)}
+.status.ok{color:var(--green-deep)}
+.status.err{color:var(--red-deep)}
+.block{margin-bottom:32px}
+.block h3{font-size:19px;font-weight:700;margin-bottom:4px}
+.hint{margin:0 0 12px;color:var(--muted);font-size:15px}
+.interests{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+
+/* Your ideas: drag to rank */
+.rows{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.row{display:grid;grid-template-columns:32px 24px minmax(0,1.6fr) minmax(0,1.1fr) 36px;gap:8px;align-items:center;background:var(--bg);border-radius:var(--r)}
+.grip{width:32px;height:38px;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:grab;touch-action:none;display:grid;place-items:center}
+.grip:hover{background:var(--sand);color:var(--ink)}
+.grip svg{width:14px;height:20px}
+.rank{font-family:var(--display);font-weight:700;font-size:15px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.rank.top{color:var(--red-deep)}
+.xbtn{width:36px;height:38px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:20px;line-height:1}
+.xbtn:hover{background:var(--red-tint);color:var(--red-deep)}
+.row.ghost{opacity:.35}
+.row.chosen{box-shadow:0 6px 18px rgba(43,38,34,.16);background:var(--surface)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--sand);border-radius:999px;padding:5px 12px;font-size:15px;font-weight:500}
+
+/* Someone else's ideas */
+.items{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)}
+.item .nm{font-weight:600;overflow-wrap:anywhere}
+.item .sub{grid-column:2;font-size:14px;color:var(--muted)}
+.item a{color:var(--slate);font-weight:600;text-underline-offset:3px}
+.item.taken .nm{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.claimbox{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;font-size:14px}
+.mine-claim{color:var(--green-deep);font-weight:600}
+.other-claim{color:var(--muted)}
+.group{margin-bottom:26px}
+.group h3{font-size:18px;margin-bottom:8px}
+.gone{color:var(--red-deep)}
+
+.removezone{margin-top:40px;padding-top:18px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:15px;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:15px;max-width:calc(100% - 32px);z-index:20}
+
+@media (max-width:760px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:18px}
+  .nav{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px}
+  .navlabel{display:none}
+  .navbtn{flex:none;background:var(--surface);box-shadow:0 0 0 1px var(--line);padding:7px 12px}
+  .navbtn.on{box-shadow:inset 0 -3px 0 var(--red), 0 0 0 1px var(--line)}
+  .row{grid-template-columns:32px 20px minmax(0,1fr) 36px;padding:8px 6px;background:var(--surface);border:1px solid var(--line)}
+  .row .grip{grid-column:1;grid-row:1} .row .rank{grid-column:2;grid-row:1} .row .f-name{grid-column:3;grid-row:1}
+  .row .xbtn{grid-column:4;grid-row:1} .row .f-link{grid-column:3;grid-row:2}
+  .item{grid-template-columns:24px minmax(0,1fr)}
+  .item .claimbox{grid-column:2;justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){.tag{transition:none}.tag:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="bow" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 15c-4-7-11-8-11-3s6 4 11 3zm0 0c4-7 11-8 11-3s-6 4-11 3z" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linejoin="round"/><path d="M16 15l-5 11M16 15l5 11" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="15" r="2.4" fill="var(--red)"/></svg>
+      <h1>Family Wish Lists</h1>
+    </div>
+    <div class="who" id="who" hidden></div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section id="picker">
+    <div class="picker-head">
+      <h2>Who's shopping?</h2>
+      <p>Tap your name. You'll see your own list with no hint of what's been claimed, and everyone else's lists with claims showing.</p>
+    </div>
+    <div class="tags" id="tags"><div class="empty">Loading the family…</div></div>
+    <form class="addform" id="addform" autocomplete="off">
+      <label for="newname">Not on here? Add a family member</label>
+      <input type="text" id="newname" maxlength="40" placeholder="First name">
+      <button class="btn" type="submit" id="addbtn">Add</button>
+      <div class="formmsg" id="addmsg" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section class="shell" id="shell" hidden>
+    <nav class="nav" id="nav" aria-label="Family lists"></nav>
+    <main id="main"></main>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script>
+/* ===== Paste your Apps Script web app URL here (it ends in /exec) ===== */
+const API_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+const MIN_ROWS = 10, LS_KEY = 'fwl-me';
+const CONFIGURED = /^https:\/\/script\.google\.com\/.+\/exec$/.test(API_URL);
+const S = {loaded:false, members:{}, claims:{}, me:lsGet(), view:'mine', draft:null, mounted:null, confirmRemove:false, busy:new Set()};
+const $ = id => document.getElementById(id);
+let sortable = null;
+
+function lsGet(){ try{ return localStorage.getItem(LS_KEY) }catch(e){ return null } }
+function lsSet(v){ try{ v ? localStorage.setItem(LS_KEY,v) : localStorage.removeItem(LS_KEY) }catch(e){} }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function newItemId(){ return 'i' + (Math.random().toString(36).slice(2) + '00000000').slice(0,8) }
+function blankRow(){ return {id:newItemId(), name:'', link:''} }
+function host(u){ try{ return new URL(u).hostname.replace(/^www\./,'') }catch(e){ return 'Link' } }
+function goodLink(u){ return /^https?:\/\//i.test(u || '') }
+function nameOf(id){ return S.members[id]?.name || 'Someone' }
+function sortedMembers(){ return Object.values(S.members).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0) || String(a.name).localeCompare(b.name)) }
+function claimFor(owner,item){ return S.claims[owner+'__'+item] || null }
+
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3500) }
+function banner(msg){ const b=$('banner'); if(msg){ b.textContent=msg; b.hidden=false } else b.hidden=true }
+
+/* ---------- Talking to the Google Sheet ---------- */
+let seq = 0, appliedSeq = 0;
+async function apiGet(){
+  const r = await fetch(API_URL + '?action=state&me=' + encodeURIComponent(S.me || ''));
+  const j = await r.json(); if(!j.ok) throw new Error(j.error || 'Something went wrong.'); return j;
+}
+async function apiPost(action, payload){
+  // Plain-text body keeps this a "simple" request that Apps Script accepts from another site.
+  const r = await fetch(API_URL, {method:'POST', body:JSON.stringify(Object.assign({action, me:S.me||''}, payload||{}))});
+  const j = await r.json(); if(!j.ok) throw new Error(j.error || 'Something went wrong.'); return j;
+}
+function applyState(j, mySeq){
+  if(mySeq < appliedSeq) return;   // an older response arrived late; ignore it
+  appliedSeq = mySeq;
+  const m = {}; (j.people||[]).forEach(p => m[p.id] = p); S.members = m;
+  const c = {}; (j.claims||[]).forEach(x => c[x.personId+'__'+x.itemId] = {owner:x.personId, itemId:x.itemId, by:x.claimedBy}); S.claims = c;
+  S.loaded = true; render();
+}
+async function call(action, payload){ const n=++seq; const j=await apiPost(action,payload); applyState(j,n); return j }
+let refreshing = false;
+async function refresh(){
+  if(refreshing || !CONFIGURED) return; refreshing = true;
+  const n = ++seq;
+  try{ const j = await apiGet(); applyState(j, n); banner(null) }
+  catch(e){ if(!S.loaded) banner("Couldn't load the family lists. Check your internet connection, then reload the page.") }
+  refreshing = false;
+}
+
+/* ---------- Rendering ---------- */
+function render(){
+  if(S.loaded && S.me && !S.members[S.me]){ S.me=null; lsSet(null) }
+  if(!S.me || !S.loaded){ renderPicker(); return }
+  $('picker').hidden=true; $('shell').hidden=false;
+  const who=$('who'); who.hidden=false;
+  who.innerHTML=`<span>You're <strong>${esc(nameOf(S.me))}</strong></span><button class="link-btn" data-act="switch">Switch person</button>`;
+  renderNav();
+  if(S.view==='mine' && S.mounted===S.me) return; // don't redraw the list you're typing in
+  renderMain();
+}
+
+function renderPicker(){
+  $('picker').hidden=false; $('shell').hidden=true; $('who').hidden=true;
+  const tags=$('tags');
+  if(!CONFIGURED){ tags.innerHTML='<div class="empty">This page isn\'t connected to its Google Sheet yet. Paste the Apps Script URL into index.html.</div>'; return }
+  if(!S.loaded){ tags.innerHTML='<div class="empty">Loading the family…</div>'; return }
+  const ms=sortedMembers();
+  tags.innerHTML = ms.length ? ms.map(m=>`<button class="tag" data-pick="${esc(m.id)}"><span class="eyebrow">To / From</span><span class="nm">${esc(m.name)}</span></button>`).join('')
+    : '<div class="empty">No one is here yet. Add the first family member below.</div>';
+}
+
+function renderNav(){
+  const my=S.members[S.me]; const others=sortedMembers().filter(m=>m.id!==S.me);
+  const myClaims=Object.values(S.claims).filter(c=>c.by===S.me).length;
+  const n=k=>`${k} idea${k===1?'':'s'}`;
+  let h=`<button class="navbtn ${S.view==='mine'?'on':''}" data-nav="mine"><span>Your list</span><small>${n((my.items||[]).length)}</small></button>`;
+  h+=`<div class="navlabel">Family</div>`;
+  h+= others.length ? others.map(m=>{
+    const items=m.items||[]; const taken=items.filter(it=>claimFor(m.id,it.id)).length;
+    return `<button class="navbtn ${S.view==='person:'+m.id?'on':''}" data-nav="person:${esc(m.id)}"><span>${esc(m.name)}</span><small>${n(items.length)} · ${taken} claimed</small></button>`;
+  }).join('') : `<small style="color:var(--muted);padding:4px 12px">No one else yet</small>`;
+  h+=`<div class="navlabel">Shopping</div><button class="navbtn ${S.view==='claims'?'on':''}" data-nav="claims"><span>Gifts you're getting</span><small>${myClaims} claimed</small></button>`;
+  $('nav').innerHTML=h;
+}
+
+function renderMain(){
+  if(S.view.startsWith('person:')){
+    const id=S.view.slice(7);
+    if(!S.members[id] || id===S.me) S.view='mine';
+    else { S.mounted=null; $('main').innerHTML=personHTML(S.members[id]); return }
+  }
+  if(S.view==='claims'){ S.mounted=null; $('main').innerHTML=claimsHTML(); return }
+  mountMine();
+}
+
+const GRIP = '<svg viewBox="0 0 14 20" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></g></svg>';
+
+function mountMine(){
+  const m=S.members[S.me];
+  if(!S.draft || S.draft.id!==S.me){
+    const rows=(m.items||[]).map(x=>({id:x.id, name:x.name||'', link:x.link||''}));
+    while(rows.length<MIN_ROWS) rows.push(blankRow());
+    const ints=(m.interests||[]).slice(0,5); while(ints.length<5) ints.push('');
+    S.draft={id:S.me, interests:ints, rows};
+  }
+  const ph=['e.g. Psych','e.g. Lord of the Rings','e.g. Trail running','e.g. Board games','e.g. Coffee'];
+  $('main').innerHTML=`
+    <div class="pagehead"><h2>Your list</h2><span class="status" id="status" aria-live="polite">Changes save automatically</span>
+      <p>Everyone else in the family sees this list. You'll never see which of these ideas someone has claimed.</p></div>
+    <section class="block"><h3>Five things you're into</h3>
+      <p class="hint">Shows, books, hobbies, teams. These give people a direction when nothing on your list fits.</p>
+      <div class="interests">${S.draft.interests.map((v,i)=>`<input type="text" id="int-${i}" data-interest="${i}" maxlength="60" value="${esc(v)}" placeholder="${ph[i]}" aria-label="Interest ${i+1}">`).join('')}</div>
+    </section>
+    <section class="block"><h3>Gift ideas</h3>
+      <p class="hint">Drag the handle to put the ones you want most at the top. Links are optional.</p>
+      <div class="rows" id="rows">${rowsHTML()}</div>
+      <button class="btn ghost" data-act="addrow">Add another idea</button>
+    </section>
+    ${removeHTML()}`;
+  S.mounted=S.me;
+  attachSortable(); updateRanks();
+}
+
+function rowsHTML(){
+  return S.draft.rows.map(r=>`<div class="row" data-id="${r.id}">
+    <button class="grip" type="button" data-grip="${r.id}" aria-label="Move this idea. Drag, or use the up and down arrow keys.">${GRIP}</button>
+    <span class="rank" aria-hidden="true"></span>
+    <input class="f-name" type="text" id="n-${r.id}" data-row="${r.id}" data-field="name" maxlength="120" value="${esc(r.name)}" placeholder="Gift idea" aria-label="Gift idea">
+    <input class="f-link" type="url" id="l-${r.id}" data-row="${r.id}" data-field="link" value="${esc(r.link)}" placeholder="Link (optional)" aria-label="Link" inputmode="url">
+    <button class="xbtn" type="button" data-act="clearrow" data-row="${r.id}" aria-label="Remove this idea" title="Remove this idea">×</button>
+  </div>`).join('');
+}
+
+function redrawRows(){ $('rows').innerHTML=rowsHTML(); attachSortable(); updateRanks() }
+
+// Rank numbers count only the ideas that have text, so blank slots don't take a number.
+function updateRanks(){
+  let k=0;
+  document.querySelectorAll('#rows .row').forEach(el=>{
+    const filled=el.querySelector('.f-name').value.trim()!=='';
+    const r=el.querySelector('.rank');
+    if(filled){ k++; r.textContent=k; r.classList.toggle('top',k<=3) } else { r.textContent=''; r.classList.remove('top') }
+  });
+}
+
+function attachSortable(){
+  if(sortable){ sortable.destroy(); sortable=null }
+  if(!window.Sortable) return; // arrow keys on the handle still work
+  sortable = Sortable.create($('rows'), {
+    handle:'.grip', animation:150, ghostClass:'ghost', chosenClass:'chosen', delayOnTouchOnly:false,
+    onEnd(){
+      const order=[...$('rows').children].map(el=>el.dataset.id);
+      S.draft.rows.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+      updateRanks(); scheduleSave();
+    }
+  });
+}
+
+function removeHTML(){
+  return S.confirmRemove
+    ? `<div class="removezone" id="removezone"><span>This deletes your interests and ideas for everyone.</span><button class="btn danger sm" data-act="removeme">Delete my list</button><button class="btn ghost sm" data-act="cancelremove">Keep it</button></div>`
+    : `<div class="removezone" id="removezone"><button class="link-btn" data-act="askremove">Remove ${esc(nameOf(S.me))} from this page</button></div>`;
+}
+
+function claimBox(ownerId, it){
+  const c=claimFor(ownerId,it.id); const busy=S.busy.has(ownerId+'__'+it.id)?'disabled':'';
+  if(c && c.by===S.me) return `<span class="mine-claim">You're getting this</span><button class="btn ghost sm" data-act="unclaim" data-owner="${esc(ownerId)}" data-item="${esc(it.id)}" ${busy}>Unclaim</button>`;
+  if(c) return `<span class="other-claim">Claimed by ${esc(nameOf(c.by))}</span>`;
+  return `<button class="btn sm" data-act="claim" data-owner="${esc(ownerId)}" data-item="${esc(it.id)}" ${busy}>${busy?'Claiming…':'Claim'}</button>`;
+}
+function linkLine(it){ return goodLink(it.link) ? `<span class="sub"><a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(host(it.link))} ↗</a></span>` : '' }
+
+function personHTML(m){
+  const ints=(m.interests||[]).filter(s=>s && String(s).trim());
+  const items=m.items||[];
+  const rows=items.map((it,i)=>`<div class="item ${claimFor(m.id,it.id)?'taken':''}">
+      <span class="rank ${i<3?'top':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
+      <div class="claimbox">${claimBox(m.id,it)}</div>${linkLine(it)}</div>`).join('');
+  return `<div class="pagehead"><h2>${esc(m.name)}'s list</h2><p>Listed in the order ${esc(m.name)} wants them most. Claim something to take it off the table for everyone else. ${esc(m.name)} won't see it.</p></div>
+    <section class="block"><h3>Into</h3>${ints.length?`<div class="chips">${ints.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>`:'<p class="hint">No interests added yet.</p>'}</section>
+    <section class="block"><h3>Gift ideas</h3>${items.length?`<div class="items">${rows}</div>`:`<p class="hint">${esc(m.name)} hasn't added any ideas yet.</p>`}</section>`;
+}
+
+function claimsHTML(){
+  const mine=Object.values(S.claims).filter(c=>c.by===S.me);
+  if(!mine.length) return `<div class="pagehead"><h2>Gifts you're getting</h2><p>Nothing claimed yet. Open someone's list and claim an idea, and it will show up here as your shopping list.</p></div>`;
+  const byOwner={}; mine.forEach(c=>(byOwner[c.owner]=byOwner[c.owner]||[]).push(c));
+  const groups=Object.entries(byOwner).sort((a,b)=>nameOf(a[0]).localeCompare(nameOf(b[0]))).map(([owner,cs])=>{
+    const items=S.members[owner]?.items||[];
+    return `<div class="group"><h3>For ${esc(nameOf(owner))}</h3><div class="items">${cs.map(c=>{
+      const i=items.findIndex(x=>x.id===c.itemId); const it=items[i];
+      if(!it) return `<div class="item"><span class="rank">–</span><span class="nm">An idea they removed</span>
+        <div class="claimbox"><button class="btn ghost sm" data-act="unclaim" data-owner="${esc(owner)}" data-item="${esc(c.itemId)}">Clear</button></div>
+        <span class="sub gone">No longer on their list</span></div>`;
+      return `<div class="item"><span class="rank ${i<3?'top':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
+        <div class="claimbox">${claimBox(owner,it)}</div>${linkLine(it)}</div>`;
+    }).join('')}</div></div>`;
+  }).join('');
+  return `<div class="pagehead"><h2>Gifts you're getting</h2><p>Your shopping list, ${mine.length} claimed so far. Numbers show where each idea sits on that person's list.</p></div>${groups}`;
+}
+
+/* ---------- Saving your own list ---------- */
+let saveT=null, saving=false, dirty=false;
+function setStatus(t,cls){ const s=$('status'); if(s){ s.textContent=t; s.className='status'+(cls?' '+cls:'') } }
+function scheduleSave(){ dirty=true; setStatus('Saving…'); clearTimeout(saveT); saveT=setTimeout(flush,900) }
+async function flush(){
+  clearTimeout(saveT);
+  if(saving || !dirty || !S.draft) return;
+  saving=true; dirty=false;
+  const d=S.draft;
+  try{
+    await call('saveList', {
+      interests:d.interests.map(s=>s.trim()),
+      items:d.rows.filter(r=>r.name.trim()).map(r=>({id:r.id, name:r.name.trim(), link:r.link.trim()}))
+    });
+    if(!dirty) setStatus('Saved','ok');
+  }catch(e){ dirty=true; setStatus("Not saved yet. Check your connection; it will try again.",'err'); setTimeout(()=>{ if(dirty) flush() },8000) }
+  saving=false;
+  if(dirty) scheduleSave();
+}
+async function leaveMine(){ if(dirty) await flush(); S.draft=null; S.mounted=null; S.confirmRemove=false; if(sortable){ sortable.destroy(); sortable=null } }
+
+/* ---------- Claims ---------- */
+async function claim(owner,itemId){
+  const key=owner+'__'+itemId; if(S.busy.has(key)) return;
+  S.busy.add(key); render();
+  try{
+    const j=await call('claim',{personId:owner, itemId});
+    toast(j.taken ? `${j.takenBy} already claimed that one.` : "Claimed. It's on your shopping list.");
+  }catch(e){ toast(e.message || "Couldn't claim that. Try again.") }
+  finally{ S.busy.delete(key); render() }
+}
+async function unclaim(owner,itemId){
+  const key=owner+'__'+itemId; if(S.busy.has(key)) return;
+  S.busy.add(key); render();
+  try{ await call('unclaim',{personId:owner, itemId}) }catch(e){ toast("Couldn't unclaim that. Try again.") }
+  finally{ S.busy.delete(key); render() }
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', async e=>{
+  const pick=e.target.closest('[data-pick]');
+  if(pick){ S.me=pick.dataset.pick; lsSet(S.me); S.claims={}; S.view='mine'; S.draft=null; S.mounted=null; render(); window.scrollTo(0,0); refresh(); return }
+  const nav=e.target.closest('[data-nav]');
+  if(nav){ if(S.view==='mine') await leaveMine(); S.view=nav.dataset.nav; S.mounted=null; render(); window.scrollTo(0,0); return }
+  const a=e.target.closest('[data-act]'); if(!a) return;
+  const act=a.dataset.act;
+  if(act==='switch'){ if(S.view==='mine') await leaveMine(); S.me=null; lsSet(null); S.claims={}; S.view='mine'; render(); window.scrollTo(0,0) }
+  else if(act==='addrow'){ const r=blankRow(); S.draft.rows.push(r); redrawRows(); $('n-'+r.id)?.focus() }
+  else if(act==='clearrow'){
+    const i=S.draft.rows.findIndex(r=>r.id===a.dataset.row); if(i<0) return;
+    S.draft.rows.splice(i,1); if(S.draft.rows.length<MIN_ROWS) S.draft.rows.push(blankRow());
+    redrawRows(); scheduleSave();
+  }
+  else if(act==='claim') claim(a.dataset.owner,a.dataset.item);
+  else if(act==='unclaim') unclaim(a.dataset.owner,a.dataset.item);
+  else if(act==='askremove'||act==='cancelremove'){ S.confirmRemove=act==='askremove'; $('removezone').outerHTML=removeHTML() }
+  else if(act==='removeme'){
+    clearTimeout(saveT); dirty=false; a.disabled=true;
+    try{ await call('removePerson'); S.me=null; lsSet(null); S.draft=null; S.mounted=null; S.confirmRemove=false; render(); toast('Removed.') }
+    catch(err){ a.disabled=false; toast("Couldn't remove that. Try again.") }
+  }
+});
+
+// Keyboard reordering on the drag handle
+document.addEventListener('keydown', e=>{
+  const g=e.target.closest && e.target.closest('[data-grip]'); if(!g || !S.draft) return;
+  if(e.key!=='ArrowUp' && e.key!=='ArrowDown') return;
+  e.preventDefault();
+  const rows=S.draft.rows, i=rows.findIndex(r=>r.id===g.dataset.grip), j=e.key==='ArrowUp'?i-1:i+1;
+  if(i<0 || j<0 || j>=rows.length) return;
+  [rows[i],rows[j]]=[rows[j],rows[i]];
+  redrawRows(); document.querySelector(`[data-grip="${g.dataset.grip}"]`)?.focus(); scheduleSave();
+});
+
+function onField(e){
+  const t=e.target; if(!S.draft || S.view!=='mine') return;
+  if(t.dataset.interest!=null){ if(S.draft.interests[+t.dataset.interest]!==t.value){ S.draft.interests[+t.dataset.interest]=t.value; scheduleSave() } }
+  else if(t.dataset.row){
+    const r=S.draft.rows.find(r=>r.id===t.dataset.row);
+    if(r && r[t.dataset.field]!==t.value){ r[t.dataset.field]=t.value; if(t.dataset.field==='name') updateRanks(); scheduleSave() }
+  }
+}
+$('main').addEventListener('input', onField);
+$('main').addEventListener('change', onField);
+
+$('addform').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const msg=$('addmsg'), inp=$('newname'), btn=$('addbtn'), name=inp.value.trim().replace(/\s+/g,' ');
+  msg.className='formmsg';
+  if(!CONFIGURED){ msg.textContent='Connect the Google Sheet first.'; msg.classList.add('err'); return }
+  if(!name){ msg.textContent='Type a name first.'; msg.classList.add('err'); return }
+  btn.disabled=true; msg.textContent='Adding…';
+  try{ await call('addPerson',{name}); inp.value=''; msg.textContent=`Added ${name}. Tap the tag to start a list.` }
+  catch(err){ msg.textContent=err.message || "Couldn't add that name."; msg.classList.add('err') }
+  btn.disabled=false;
+});
+
+// Pick up other people's changes: every 30 seconds while the page is open, and whenever someone comes back to it.
+setInterval(()=>{ if(document.visibilityState==='visible' && !saving && !dirty) refresh() }, 30000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flush(); else if(!dirty) refresh() });
+window.addEventListener('pagehide', ()=>flush());
+
+if(!CONFIGURED) banner('Setup needed: paste your Apps Script web app URL into API_URL near the bottom of index.html.');
+render();
+refresh();
+</script>
+</body>
+</html>
