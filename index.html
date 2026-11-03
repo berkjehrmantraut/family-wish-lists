@@ -254,7 +254,7 @@ function renderPicker(){
   if(!CONFIGURED){ tags.innerHTML='<div class="empty">This page isn\'t connected to its Google Sheet yet. Paste the Apps Script URL into index.html.</div>'; return }
   if(!S.loaded){ tags.innerHTML='<div class="empty">Loading the family…</div>'; return }
   const ms=sortedMembers();
-  tags.innerHTML = ms.length ? ms.map(m=>`<button class="tag" data-pick="${esc(m.id)}"><span class="eyebrow">To / From</span><span class="nm">${esc(m.name)}</span></button>`).join('')
+  tags.innerHTML = ms.length ? ms.map(m=>`<button class="tag" data-pick="${esc(m.id)}"><span class="eyebrow">I am...</span><span class="nm">${esc(m.name)}</span></button>`).join('')
     : '<div class="empty">No one is here yet. Add the first family member below.</div>';
 }
 
