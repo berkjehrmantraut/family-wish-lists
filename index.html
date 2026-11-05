@@ -102,12 +102,14 @@ input::placeholder{color:color-mix(in srgb, var(--muted) 75%, transparent)}
 
 /* Your ideas: drag to rank */
 .rows{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.row{display:grid;grid-template-columns:32px 24px minmax(0,1.6fr) minmax(0,1.1fr) 36px;gap:8px;align-items:center;background:var(--bg);border-radius:var(--r)}
+.row{display:grid;grid-template-columns:32px 24px minmax(0,1.6fr) minmax(0,1.1fr) 36px;gap:6px 8px;align-items:center;background:var(--bg);border-radius:var(--r)}
+.row .f-notes{grid-column:3/5;grid-row:2;font-size:14px;padding:6px 11px;background:transparent;border-style:dashed}
+.row .f-notes:focus,.row .f-notes:not(:placeholder-shown){background:var(--surface);border-style:solid}
 .grip{width:32px;height:38px;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:grab;touch-action:none;display:grid;place-items:center}
 .grip:hover{background:var(--sand);color:var(--ink)}
 .grip svg{width:14px;height:20px}
 .rank{font-family:var(--display);font-weight:700;font-size:15px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
-.rank.top{color:var(--red-deep)}
+.rank.hot{color:var(--red-deep)}
 .xbtn{width:36px;height:38px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:20px;line-height:1}
 .xbtn:hover{background:var(--red-tint);color:var(--red-deep)}
 .row.ghost{opacity:.35}
@@ -121,6 +123,8 @@ input::placeholder{color:color-mix(in srgb, var(--muted) 75%, transparent)}
 .item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)}
 .item .nm{font-weight:600;overflow-wrap:anywhere}
 .item .sub{grid-column:2;font-size:14px;color:var(--muted)}
+.item .note{grid-column:2;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.item .note b{font-weight:600;color:var(--muted)}
 .item a{color:var(--slate);font-weight:600;text-underline-offset:3px}
 .item.taken .nm{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
 .claimbox{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;font-size:14px}
@@ -142,7 +146,7 @@ input::placeholder{color:color-mix(in srgb, var(--muted) 75%, transparent)}
   .navbtn.on{box-shadow:inset 0 -3px 0 var(--red), 0 0 0 1px var(--line)}
   .row{grid-template-columns:32px 20px minmax(0,1fr) 36px;padding:8px 6px;background:var(--surface);border:1px solid var(--line)}
   .row .grip{grid-column:1;grid-row:1} .row .rank{grid-column:2;grid-row:1} .row .f-name{grid-column:3;grid-row:1}
-  .row .xbtn{grid-column:4;grid-row:1} .row .f-link{grid-column:3;grid-row:2}
+  .row .xbtn{grid-column:4;grid-row:1} .row .f-link{grid-column:3;grid-row:2} .row .f-notes{grid-column:3;grid-row:3}
   .item{grid-template-columns:24px minmax(0,1fr)}
   .item .claimbox{grid-column:2;justify-content:flex-start}
 }
@@ -197,7 +201,7 @@ function lsGet(){ try{ return localStorage.getItem(LS_KEY) }catch(e){ return nul
 function lsSet(v){ try{ v ? localStorage.setItem(LS_KEY,v) : localStorage.removeItem(LS_KEY) }catch(e){} }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
 function newItemId(){ return 'i' + (Math.random().toString(36).slice(2) + '00000000').slice(0,8) }
-function blankRow(){ return {id:newItemId(), name:'', link:''} }
+function blankRow(){ return {id:newItemId(), name:'', link:'', notes:''} }
 function host(u){ try{ return new URL(u).hostname.replace(/^www\./,'') }catch(e){ return 'Link' } }
 function goodLink(u){ return /^https?:\/\//i.test(u || '') }
 function nameOf(id){ return S.members[id]?.name || 'Someone' }
@@ -287,7 +291,7 @@ const GRIP = '<svg viewBox="0 0 14 20" aria-hidden="true"><g fill="currentColor"
 function mountMine(){
   const m=S.members[S.me];
   if(!S.draft || S.draft.id!==S.me){
-    const rows=(m.items||[]).map(x=>({id:x.id, name:x.name||'', link:x.link||''}));
+    const rows=(m.items||[]).map(x=>({id:x.id, name:x.name||'', link:x.link||'', notes:x.notes||''}));
     while(rows.length<MIN_ROWS) rows.push(blankRow());
     const ints=(m.interests||[]).slice(0,5); while(ints.length<5) ints.push('');
     S.draft={id:S.me, interests:ints, rows};
@@ -301,7 +305,7 @@ function mountMine(){
       <div class="interests">${S.draft.interests.map((v,i)=>`<input type="text" id="int-${i}" data-interest="${i}" maxlength="60" value="${esc(v)}" placeholder="${ph[i]}" aria-label="Interest ${i+1}">`).join('')}</div>
     </section>
     <section class="block"><h3>Gift ideas</h3>
-      <p class="hint">Drag the handle to put the ones you want most at the top. Links are optional.</p>
+      <p class="hint">Drag the handle to put the ones you want most at the top. Links and notes (size, color, model) are optional.</p>
       <div class="rows" id="rows">${rowsHTML()}</div>
       <button class="btn ghost" data-act="addrow">Add another idea</button>
     </section>
@@ -316,6 +320,7 @@ function rowsHTML(){
     <span class="rank" aria-hidden="true"></span>
     <input class="f-name" type="text" id="n-${r.id}" data-row="${r.id}" data-field="name" maxlength="120" value="${esc(r.name)}" placeholder="Gift idea" aria-label="Gift idea">
     <input class="f-link" type="url" id="l-${r.id}" data-row="${r.id}" data-field="link" value="${esc(r.link)}" placeholder="Link (optional)" aria-label="Link" inputmode="url">
+    <input class="f-notes" type="text" id="o-${r.id}" data-row="${r.id}" data-field="notes" maxlength="300" value="${esc(r.notes)}" placeholder="Notes: size, color, any version is fine… (optional)" aria-label="Notes">
     <button class="xbtn" type="button" data-act="clearrow" data-row="${r.id}" aria-label="Remove this idea" title="Remove this idea">×</button>
   </div>`).join('');
 }
@@ -328,7 +333,7 @@ function updateRanks(){
   document.querySelectorAll('#rows .row').forEach(el=>{
     const filled=el.querySelector('.f-name').value.trim()!=='';
     const r=el.querySelector('.rank');
-    if(filled){ k++; r.textContent=k; r.classList.toggle('top',k<=3) } else { r.textContent=''; r.classList.remove('top') }
+    if(filled){ k++; r.textContent=k; r.classList.toggle('hot',k<=3) } else { r.textContent=''; r.classList.remove('hot') }
   });
 }
 
@@ -358,13 +363,14 @@ function claimBox(ownerId, it){
   return `<button class="btn sm" data-act="claim" data-owner="${esc(ownerId)}" data-item="${esc(it.id)}" ${busy}>${busy?'Claiming…':'Claim'}</button>`;
 }
 function linkLine(it){ return goodLink(it.link) ? `<span class="sub"><a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(host(it.link))} ↗</a></span>` : '' }
+function noteLine(it){ return it.notes && String(it.notes).trim() ? `<span class="note"><b>Note:</b> ${esc(it.notes)}</span>` : '' }
 
 function personHTML(m){
   const ints=(m.interests||[]).filter(s=>s && String(s).trim());
   const items=m.items||[];
   const rows=items.map((it,i)=>`<div class="item ${claimFor(m.id,it.id)?'taken':''}">
-      <span class="rank ${i<3?'top':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
-      <div class="claimbox">${claimBox(m.id,it)}</div>${linkLine(it)}</div>`).join('');
+      <span class="rank ${i<3?'hot':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
+      <div class="claimbox">${claimBox(m.id,it)}</div>${noteLine(it)}${linkLine(it)}</div>`).join('');
   return `<div class="pagehead"><h2>${esc(m.name)}'s list</h2><p>Listed in the order ${esc(m.name)} wants them most. Claim something to take it off the table for everyone else. ${esc(m.name)} won't see it.</p></div>
     <section class="block"><h3>Into</h3>${ints.length?`<div class="chips">${ints.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>`:'<p class="hint">No interests added yet.</p>'}</section>
     <section class="block"><h3>Gift ideas</h3>${items.length?`<div class="items">${rows}</div>`:`<p class="hint">${esc(m.name)} hasn't added any ideas yet.</p>`}</section>`;
@@ -381,8 +387,8 @@ function claimsHTML(){
       if(!it) return `<div class="item"><span class="rank">–</span><span class="nm">An idea they removed</span>
         <div class="claimbox"><button class="btn ghost sm" data-act="unclaim" data-owner="${esc(owner)}" data-item="${esc(c.itemId)}">Clear</button></div>
         <span class="sub gone">No longer on their list</span></div>`;
-      return `<div class="item"><span class="rank ${i<3?'top':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
-        <div class="claimbox">${claimBox(owner,it)}</div>${linkLine(it)}</div>`;
+      return `<div class="item"><span class="rank ${i<3?'hot':''}" title="Their #${i+1}">${i+1}</span><span class="nm">${esc(it.name)}</span>
+        <div class="claimbox">${claimBox(owner,it)}</div>${noteLine(it)}${linkLine(it)}</div>`;
     }).join('')}</div></div>`;
   }).join('');
   return `<div class="pagehead"><h2>Gifts you're getting</h2><p>Your shopping list, ${mine.length} claimed so far. Numbers show where each idea sits on that person's list.</p></div>${groups}`;
@@ -400,7 +406,7 @@ async function flush(){
   try{
     await call('saveList', {
       interests:d.interests.map(s=>s.trim()),
-      items:d.rows.filter(r=>r.name.trim()).map(r=>({id:r.id, name:r.name.trim(), link:r.link.trim()}))
+      items:d.rows.filter(r=>r.name.trim()).map(r=>({id:r.id, name:r.name.trim(), link:r.link.trim(), notes:(r.notes||'').trim()}))
     });
     if(!dirty) setStatus('Saved','ok');
   }catch(e){ dirty=true; setStatus("Not saved yet. Check your connection; it will try again.",'err'); setTimeout(()=>{ if(dirty) flush() },8000) }
